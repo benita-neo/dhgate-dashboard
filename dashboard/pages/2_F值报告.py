@@ -369,6 +369,55 @@ st.dataframe(
 )
 
 # ---------------------------------------------------------------------------
+# Creative type trend over time
+# ---------------------------------------------------------------------------
+
+st.subheader("📈 Creative Type AB GMV Trend")
+
+# Build a label for each format × creative_type combo
+fdf["_creative_label"] = fdf.apply(
+    lambda r: f"{r['format'] or 'unknown'} / {r['creative_type'] or 'none'}", axis=1
+)
+
+creative_daily = (
+    fdf.groupby(["date", "_creative_label"])["ab_gmv"]
+    .sum()
+    .reset_index()
+)
+
+# Order combos by total AB GMV descending (matches breakdown table order)
+combo_order = (
+    creative_daily.groupby("_creative_label")["ab_gmv"]
+    .sum()
+    .sort_values(ascending=False)
+    .index.tolist()
+)
+
+fig_creative_trend = go.Figure()
+for i, label in enumerate(combo_order):
+    cdata = creative_daily[creative_daily["_creative_label"] == label]
+    fig_creative_trend.add_trace(go.Scatter(
+        x=cdata["date"], y=cdata["ab_gmv"],
+        name=label,
+        line=dict(color=colors[i % len(colors)], width=2),
+        mode="lines",
+        connectgaps=False,
+    ))
+
+fig_creative_trend.update_layout(
+    hovermode="x unified",
+    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
+    height=380,
+    margin=dict(t=80, b=20, l=10, r=10),
+    yaxis=dict(tickprefix="$"),
+    xaxis_title="",
+)
+
+st.plotly_chart(fig_creative_trend, use_container_width=True)
+
+st.divider()
+
+# ---------------------------------------------------------------------------
 # Raw data expander
 # ---------------------------------------------------------------------------
 
